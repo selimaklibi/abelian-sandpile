@@ -13,8 +13,8 @@ checks every statement of the report numerically, and extends it to scaling laws
 ## Model
 
 A configuration is $\eta:\mathbb{Z}^2\to\mathbb{N}$. A site with $\eta(x)\ge 4$ is unstable and **topples**:
-$\eta \leftarrow \eta + \Delta\mathbf{1}_x$, i.e. it loses 4 grains and each of its 4 neighbours gains one.
-The **odometer** $u(x)$ counts how many times $x$ toppled, so that $\eta_{\text{final}} = \eta_0 + \Delta u$.
+$`\eta \leftarrow \eta + \Delta\mathbf{1}_x`$, i.e. it loses 4 grains and each of its 4 neighbours gains one.
+The **odometer** $u(x)$ counts how many times $x$ toppled, so that $`\eta_{\text{final}} = \eta_0 + \Delta u`$.
 
 ## What is proved in the report, and how the code checks it
 
@@ -22,10 +22,10 @@ The **odometer** $u(x)$ counts how many times $x$ toppled, so that $\eta_{\text{
 |---|---|
 | Abelian theorem: the final state does not depend on the toppling order | random-order and FIFO sequential toppling vs. vectorised parallel toppling: identical final state **and identical odometer** |
 | The number of topplings $\ell$ is order-independent | $\ell$ equal for all schedules |
-| Stabilisation is finite, mass is conserved | $\max\eta_{\text{final}}\le 3$, $\sum\eta_{\text{final}} = G$ |
-| $C_n$ (sites that received a grain) is connected, $C_n\subset[-G,G]^2$ | BFS connectivity, bounding box |
-| $\mathrm{Card}(\partial C_n) \le G$, $\mathrm{Card}(C_n)\le 4n+1$, $\mathrm{Card}(C_n)\le G$ | direct counts up to $G = 10^4$ |
-| Boundary sites of $C_n$ keep at least one grain | checked site by site |
+| Stabilisation is finite, mass is conserved | $`\max\eta_{\text{final}}\le 3`$, $`\sum\eta_{\text{final}} = G`$ |
+| $`C_n`$ (sites that received a grain) is connected, $`C_n\subset[-G,G]^2`$ | BFS connectivity, bounding box |
+| $`\mathrm{Card}(\partial C_n) \le G`$, $`\mathrm{Card}(C_n)\le 4n+1`$, $`\mathrm{Card}(C_n)\le G`$ | direct counts up to $G = 10^4$ |
+| Boundary sites of $`C_n`$ keep at least one grain | checked site by site |
 
 Two extra exact identities are used as regression tests:
 
@@ -33,7 +33,7 @@ Two extra exact identities are used as regression tests:
   $$\sum_x u(x) = \tfrac14 \sum_x \Vert x\Vert^2 \eta_{\text{final}}(x),$$
   which holds exactly (integer equality) in the simulations.
 * **Dhar's theorem.** On an $L\times L$ grid with a sink, the mean avalanche size in the stationary regime equals
-  $\frac{1}{L^2}\mathbf 1^\top(-\Delta_{\text{Dir}})^{-1}\mathbf 1$. Simulation vs. exact sparse solve:
+  $`\frac{1}{L^2}\mathbf 1^\top(-\Delta_{\text{Dir}})^{-1}\mathbf 1`$. Simulation vs. exact sparse solve:
 
 | L | mean avalanche size (simulation) | exact (Dhar) |
 |---|---|---|
@@ -44,7 +44,7 @@ Two extra exact identities are used as regression tests:
 ## Extensions
 
 **Scaling of the point source.** With $G$ grains at the origin, the identity above and a final density
-$\rho\approx 2.125$ on a disc give $\sum_x u(x)\approx G^2/(8\pi\rho)$ and radius $\approx\sqrt{G/(\pi\rho)}$.
+$\rho\approx 2.125$ on a disc give $`\sum_x u(x)\approx G^2/(8\pi\rho)`$ and radius $\approx\sqrt{G/(\pi\rho)}$.
 Log-log regressions over $G = 2^6,\dots,2^{16}$ give slopes **1.977** and **0.482** (log corrections explain the gap to 2 and 1/2).
 
 <p align="center"><img src="figures/scaling.png" width="820"></p>
