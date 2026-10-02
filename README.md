@@ -1,148 +1,91 @@
-# [English below] Projet de Recherche Mathématiques: Modele du Tas de Sables Abelien
+# Abelian sandpile on $\mathbb{Z}^2$: theorems, verified numerically
 
-# Abelian Sandpile Model (Modèle du Tas de Sable Abélien)
+[![tests](https://github.com/selimaklibi/abelian-sandpile/actions/workflows/tests.yml/badge.svg)](https://github.com/selimaklibi/abelian-sandpile/actions/workflows/tests.yml)
+![python](https://img.shields.io/badge/python-3.10%2B-blue) ![license](https://img.shields.io/badge/license-MIT-green)
 
-Projet d'étude mathématique sur la dynamique, la commutativité et la géométrie de propagation du modèle du tas de sable sur $\mathbb{Z}^2$.
+Research project on the Bak–Tang–Wiesenfeld sandpile, started at the *Maths C pour L* research internship (Lille):
+we proved the abelian property and geometric bounds on the avalanche region (report in French:
+[`report_sandpile_FR.pdf`](report_sandpile_FR.pdf)). This repository adds a vectorised simulator that
+checks every statement of the report numerically, and extends it to scaling laws and self-organised criticality.
 
----
+<p align="center"><img src="figures/point_source.png" width="520"></p>
 
-## Présentation du projet
+## Model
 
-Ce travail analyse le comportement d'un système discret de physique statistique et de combinatoire : le **modèle du tas de sable abélien** sur une grille infinie bidimensionnelle $\mathbb{Z}^2$. 
+A configuration is $\eta:\mathbb{Z}^2\to\mathbb{N}$. A site with $\eta(x)\ge 4$ is unstable and **topples**:
+$\eta \leftarrow \eta + \Delta\mathbf{1}_x$, i.e. it loses 4 grains and each of its 4 neighbours gains one.
+The **odometer** $u(x)$ counts how many times $x$ toppled, so that $\eta_{\text{final}} = \eta_0 + \Delta u$.
 
-L'objectif est d'étudier la convergence, l'indépendance de l'ordre des transitions (propriété abélienne) et les propriétés géométriques de la propagation des grains.
+## What is proved in the report, and how the code checks it
 
----
+| Statement | Test (`tests/test_core.py`) |
+|---|---|
+| Abelian theorem: the final state does not depend on the toppling order | random-order and FIFO sequential toppling vs. vectorised parallel toppling: identical final state **and identical odometer** |
+| The number of topplings $\ell$ is order-independent | $\ell$ equal for all schedules |
+| Stabilisation is finite, mass is conserved | $\max\eta_{\text{final}}\le 3$, $\sum\eta_{\text{final}} = G$ |
+| $C_n$ (sites that received a grain) is connected, $C_n\subset[-G,G]^2$ | BFS connectivity, bounding box |
+| $\mathrm{Card}(\partial C_n) \le G$, $\mathrm{Card}(C_n)\le 4n+1$, $\mathrm{Card}(C_n)\le G$ | direct counts up to $G = 10^4$ |
+| Boundary sites of $C_n$ keep at least one grain | checked site by site |
 
-## Cadre formel & Règles
+Two extra exact identities are used as regression tests:
 
-### 1. Configuration (État)
-Un état est une fonction $\eta : \mathbb{Z}^2 \to \mathbb{N}$, où $\eta_{i,j}$ représente le nombre de grains de sable présents au site $(i, j)$ :
-- **Sommet stable :** $\eta_{i,j} \le 4$
-- **Sommet instable :** $\eta_{i,j} \ge 5$ (dans le cadre de déclenchement à seuil $\ge 4$)
-- **État globalement stable :** $\forall (i, j) \in \mathbb{Z}^2, \, \eta_{i,j} \le 4$
+* **Discrete Green identity.** Since $\Delta \Vert x\Vert^2 = 4$ on $\mathbb{Z}^2$, summation by parts gives, for a point source,
+  $$\sum_x u(x) = \tfrac14 \sum_x \Vert x\Vert^2 \eta_{\text{final}}(x),$$
+  which holds exactly (integer equality) in the simulations.
+* **Dhar's theorem.** On an $L\times L$ grid with a sink, the mean avalanche size in the stationary regime equals
+  $\frac{1}{L^2}\mathbf 1^\top(-\Delta_{\text{Dir}})^{-1}\mathbf 1$. Simulation vs. exact sparse solve:
 
-### 2. Opérateur d'avalanche
-Lorsqu'un site $(i_0, j_0)$ est instable, il se décharge :
-- Il perd **4 grains**.
-- Il distribue **1 grain** à chacun de ses 4 voisins immédiats : $(i_0 \pm 1, j_0)$ et $(i_0, j_0 \pm 1)$.
+| L | mean avalanche size (simulation) | exact (Dhar) |
+|---|---|---|
+| 32 | 40.49 | 40.58 |
+| 64 | 153.15 | 153.04 |
+| 128 | 591.94 | 593.89 |
 
-L'opération se modélise par une matrice d'avalanche $A^{(i_0, j_0)}$ :
-$$\eta' = \eta + A^{(i_0, j_0)}$$
+## Extensions
 
----
+**Scaling of the point source.** With $G$ grains at the origin, the identity above and a final density
+$\rho\approx 2.125$ on a disc give $\sum_x u(x)\approx G^2/(8\pi\rho)$ and radius $\approx\sqrt{G/(\pi\rho)}$.
+Log-log regressions over $G = 2^6,\dots,2^{16}$ give slopes **1.977** and **0.482** (log corrections explain the gap to 2 and 1/2).
 
-## Résultats & Théorèmes Principaux
+<p align="center"><img src="figures/scaling.png" width="820"></p>
 
-### 1. Propriété d'échange net nul
-Deux sites voisins simultanément instables n'échangent aucun grain net lors de leurs décharges respectives : l'envoi mutuel de 1 grain s'annule.
+**Self-organised criticality.** Dropping grains at random on a grid with a sink drives the pile to a critical state with
+heavy-tailed avalanche sizes. Discrete power-law MLE (Clauset, Shalizi & Newman, 2009) on $s\in[10, L^2/4]$ gives
+$\hat\tau = 1.63, 1.45, 1.36$ for $L = 32, 64, 128$: the estimate drifts with $L$, consistent with the known strong
+finite-size corrections of the BTW model (asymptotic values around 1.2–1.3 are reported in the literature).
+Single-$L$ exponent fits should therefore not be over-interpreted.
 
-### 2. Commutativité
-L'addition matricielle dans $M_{\mathbb{Z}^2}(\mathbb{Z})$ étant commutative :
-$$(\eta_0 + A^{x}) + A^{y} = (\eta_0 + A^{y}) + A^{x}$$
+<p align="center"><img src="figures/avalanches.png" width="720"></p>
 
-### 3. Théorème Abélien (Théorème principal)
-Pour une configuration initiale donnée $\eta$ se stabilisant via deux séquences admissibles d'avalanches $(x_1, \dots, x_l)$ et $(y_1, \dots, y_{l'})$ :
-- **Unicité de l'état final :** $\eta^{(1)} = \eta^{(2)}$
-- **Invariant du nombre d'étapes :** $l = l'$
+## Implementation notes
 
-> **Conclusion :** Ni l'ordre dans lequel les avalanches sont déclenchées, ni le choix des sites intermédiaires n'affectent le résultat final ou la durée du processus.
+* `stabilize` topples every unstable site $\lfloor \eta/4\rfloor$ times per sweep with NumPy slicing; the abelian property
+  makes this legal. On $\mathbb{Z}^2$ the window is doubled until no grain reaches its border, so results are exact for the
+  infinite lattice (131 072 grains, 3·10⁸ topplings in about a minute).
+* `drive` uses an explicit stack on Python lists, which is faster than vectorised sweeps for the many small avalanches.
+* Convention: unstable iff $\eta\ge 4$, stable configurations take values in $\lbrace 0,1,2,3\rbrace$ (the report's
+  "$\le 4$" in its definition of stability is a typo).
 
----
+```
+sandpile/core.py        stabilisation (parallel + sequential), odometer, visited set, boundary, connectivity
+sandpile/avalanches.py  driven pile with sink, power-law MLE, Dhar's exact mean avalanche size
+tests/                  23 tests
+scripts/make_figures.py reproduces every figure and number (use --quick for a fast run)
+```
 
-## Géométrie et Bornes de Propagation
+```bash
+pip install -e ".[dev]"
+pytest -q
+python scripts/make_figures.py
+```
 
-On note $C_n$ l'ensemble des sites de $\mathbb{Z}^2$ ayant reçu au moins un grain après $n$ avalanches, avec un nombre total de grains $G$ (invariant) :
+## References
 
-| Propriété | Formulation mathématique | Interprétation |
-| :--- | :--- | :--- |
-| **Croissance** | $C_0 \subset C_1 \subset \dots \subset C_n$ | La zone visitée s'étend de manière monotone |
-| **Borne de surface** | $\mathrm{Card}(C_n) \le 4n + 1$ et $\mathrm{Card}(C_n) \le G$ | Croissance au plus linéaire par rapport au temps |
-| **Frontière** | $\mathrm{Card}(\partial C_n) \le G$ | Le bord est contrôlé par la masse totale |
-| **Topologie** | $C_n$ est connexe par chemins | Absence d'îlots déconnectés de l'origine |
-| **Confinement** | $C_n \subset [-G, G]^2$ | Propagation strictement bornée par le nombre de grains |
-| **Stabilisation** | Processus fini | Atteinte obligatoire d'un état d'équilibre |
----
-
-## Auteurs
-Recherche effectuée par :
-- Selima Klibi
-- Romane Nouvelle
-- Assiya Rakhymberdi
-- Narimene Boudab
-
----
-
-# [ENGLISH] Mathematics Research Project: Abelian Sandpile Model
-
-> **Note:** The full research report and original documentation are written in French.
-
-Mathematical research project studying the dynamics, commutativity, and propagation geometry of the abelian sandpile model on $\mathbb{Z}^2$.
-
----
-
-## Project Overview
-
-This project investigates the behavior of a discrete dynamical system from statistical physics and combinatorics: the **Abelian Sandpile Model** on an infinite two-dimensional grid $\mathbb{Z}^2$.
-
-The key objectives are to study convergence, path independence across transition sequences (the abelian property), and the geometric properties governing grain propagation.
-
----
-
-## Formal Framework & Rules
-
-### 1. Configuration (State)
-A configuration (or state) is a function $\eta : \mathbb{Z}^2 \to \mathbb{N}$, where $\eta_{i,j}$ denotes the number of sand grains at site $(i, j)$:
-- **Stable site:** $\eta_{i,j} \le 4$
-- **Unstable site:** $\eta_{i,j} \ge 5$ (toppling threshold defined at $\ge 4$)
-- **Globally stable state:** $\forall (i, j) \in \mathbb{Z}^2, \, \eta_{i,j} \le 4$
-
-### 2. Toppling Operator (Avalanche)
-When a site $(i_0, j_0)$ becomes unstable, it topples:
-- It loses **4 grains**.
-- It distributes **1 grain** to each of its 4 nearest neighbors: $(i_0 \pm 1, j_0)$ and $(i_0, j_0 \pm 1)$.
-
-This operation is modeled by a toppling matrix $A^{(i_0, j_0)}$:
-$$\eta' = \eta + A^{(i_0, j_0)}$$
-
----
-
-## Key Results & Theorems
-
-### 1. Zero Net Exchange Property
-Two neighboring sites that are simultaneously unstable do not exchange any net grains during their respective topplings: the mutual transfer of 1 grain cancels out.
-
-### 2. Commutativity
-Since matrix addition in $M_{\mathbb{Z}^2}(\mathbb{Z})$ is commutative:
-$$(\eta_0 + A^{x}) + A^{y} = (\eta_0 + A^{y}) + A^{x}$$
-
-### 3. Abelian Theorem (Main Theorem)
-For any given initial configuration $\eta$ that stabilizes through two admissible toppling sequences $(x_1, \dots, x_l)$ and $(y_1, \dots, y_{l'})$:
-- **Uniqueness of final state:** $\eta^{(1)} = \eta^{(2)}$
-- **Invariance of sequence length:** $l = l'$
-
-> **Conclusion:** Neither the order in which avalanches are triggered nor the choice of intermediate sites affects the final stable state or the total number of topplings.
-
----
-
-## Propagation Geometry and Bounds
-
-Let $C_n$ denote the set of sites in $\mathbb{Z}^2$ that have received at least one grain after $n$ topplings, with $G$ representing the total number of grains (an invariant of the system):
-
-| Property | Mathematical Formulation | Interpretation |
-| :--- | :--- | :--- |
-| **Growth** | $C_0 \subset C_1 \subset \dots \subset C_n$ | The visited area expands monotonically |
-| **Area Bound** | $\mathrm{Card}(C_n) \le 4n + 1$ and $\mathrm{Card}(C_n) \le G$ | Sublinear/linear spatial growth over time |
-| **Boundary** | $\mathrm{Card}(\partial C_n) \le G$ | The perimeter is controlled by the total mass |
-| **Topology** | $C_n$ is path-connected | No disconnected islands from the origin |
-| **Confinement** | $C_n \subset [-G, G]^2$ | Spatial propagation is strictly bounded by $G$ |
-| **Stabilization** | Finite process | The system is guaranteed to reach an equilibrium |
-
----
+- P. Bak, C. Tang & K. Wiesenfeld (1987). *Self-organized criticality*. Physical Review Letters 59(4).
+- D. Dhar (1990). *Self-organized critical state of sandpile automaton models*. Physical Review Letters 64(14).
+- L. Levine & Y. Peres (2017). *Laplacian growth, sandpiles, and scaling limits*. Bulletin of the AMS 54(3).
+- A. Clauset, C. R. Shalizi & M. Newman (2009). *Power-law distributions in empirical data*. SIAM Review 51(4).
 
 ## Authors
-Research conducted by:
-- Selima Klibi
-- Romane Nouvelle
-- Assiya Rakhymberdi
-- Narimene Boudab
+
+Selima Klibi, Romane Nouvelle, Assiya Rakhymberdi, Narimene Boudab. Simulation code and extensions: Selima Klibi.
